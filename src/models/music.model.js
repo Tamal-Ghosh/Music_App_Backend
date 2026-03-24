@@ -1,27 +1,21 @@
 const mongoose= require('mongoose')
 
 const musicSchema = mongoose.Schema({
-    username:{
-        type:String,
-        required: true,
-        unique: true
-    },
-    email:{
-        type:String,
-        required: true,
-        unique: true
-    },
-    password:{
+    uri:{
         type:String,
         required: true
     },
-    role:{
-        type: String,
-        enum:['user','atrist'],
-        default:'user'
+    title:{
+        type:String,
+        required: true
+    },
+    artist:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"users",
+        required:true
     }
 })
 
-const userModel= mongoose.model('users',userSchema);
+const musicModel= mongoose.model("musics",musicSchema);
 
-module.exports=userModel
+module.exports=musicModel
