@@ -7,26 +7,7 @@ const { json } = require('express');
 
 async function createMusic(req,res){
 
-    const token = req.cookies.token ;
-
-    if(!token)
-    {
-        return res.status(401).json({
-            message : "Unauthorized"
-        })
-    }
-
-    try {
-        const decoded=jwt.verify(token,process.env.JWT_SECRET)
-        if(decoded.role!=='artist' )
-        {
-            return res.status(403).json({
-                message: "You don't have access to create a music!"
-            })
-        }
-    
-
-    const {title}=req.body
+        const {title}=req.body
         const file = req.file || req.files?.[0]
 
         if (!title) {
@@ -47,7 +28,7 @@ async function createMusic(req,res){
     const music=await musicModel.create({
         uri:result.url,
         title,
-        artist: decoded.id
+        artist: req.user.id
     })
 
     res.status(201).json({
@@ -55,49 +36,18 @@ async function createMusic(req,res){
     music
 
 })
-} catch (error) {
-        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-            return res.status(401).json({ message: "Unauthorized failed" })
-        }
 
-        return res.status(500).json({ message: "Upload failed" })
-        
-    }
 
 
 }
 
 async function createAlbum(req,res) {
-    const token = req.cookies.token
-    if(!token)
-    {
-        return res.status(401).json({
-            message:"Unauthorized"
-        })
-    }
-
-    let decoded
-
-    try {
-        decoded= jwt.verify(token,process.env.JWT_SECRET)
-        if(decoded.role !== "artist")
-        {
-            return res.status(403).json({
-                message : "you don't have access to create an album"
-            })
-        }
-        
-    } catch (error) {
-        console.log(error);
-        return res.status(401).json({message: "Unauthorized and not matched"})
-        
-    }
-
+    
     const {title, musics}=req.body
     const album = await albumModel.create({
         title,
         musics:musics,
-        artist: decoded.id
+        artist: req.user.id
     })
 
     res.status(201).json({
@@ -113,4 +63,41 @@ async function createAlbum(req,res) {
 }
 
 
-module.exports={createMusic,createAlbum}
+async function geAllMusic(req,res){
+    const musics= await musicModel.find().limit(2).populate("artist", "username email")
+
+    res.status(200).json({
+        message: "Get all the musics",
+        musics
+    })
+}
+
+
+async function getAllAlbums(req,res)
+{
+    const albums= await albumModel.find().populate("musics")
+     res.status(200).json({
+        message: "Get all the albums",
+        albums
+    })
+
+}
+
+
+async function getAlbumById(req, res) {
+    const albumId =req.params.albumId;
+    const album = await albumModel.findById(albumId).populate("artist", "username").populate("musics")
+
+    if (!album) {
+        return res.status(404).json({
+            message: "Album not found"
+        })
+    }
+
+    res.status(200).json({
+        message: "Album found successfully",
+        album
+    })
+}
+
+module.exports={createMusic,createAlbum, geAllMusic,getAllAlbums, getAlbumById }
